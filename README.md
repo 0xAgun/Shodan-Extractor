@@ -76,3 +76,12 @@ python3 main.py c94f4160-xxxx-xxxx-xxxe.json.gz -e name.txt -H host.txt
 ```
 
 we put all togather
+
+
+### All sorts of Contributions Are welcome
+
+## 🔗 Links
+[![twitter](https://img.shields.io/badge/twitter-1DA1F2?style=for-the-badge&logo=twitter&logoColor=white)](https://twitter.com/myselfAshraful)
+
+  
+# Hi, I'm 0xAgun! 👋
