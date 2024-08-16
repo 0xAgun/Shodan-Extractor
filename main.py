@@ -18,6 +18,21 @@ class Extractor:
         self.table.add_column("Port", style="red")
         self.table.add_column("Hostname", style="yellow")
         self.console = Console()
+
+
+    def Banner(self):
+        self.holders = """
+           _____ __              __               ______     __                  __            
+          / ___// /_  ____  ____/ /___ _____     / ____/  __/ /__________ ______/ /_____  _____
+          \__ \/ __ \/ __ \/ __  / __ `/ __ \   / __/ | |/_/ __/ ___/ __ `/ ___/ __/ __ \/ ___/
+         ___/ / / / / /_/ / /_/ / /_/ / / / /  / /____>  </ /_/ /  / /_/ / /__/ /_/ /_/ / /    
+        /____/_/ /_/\____/\__,_/\__,_/_/ /_/  /_____/_/|_|\__/_/   \__,_/\___/\__/\____/_/      v1.0.5
+
+                                                                    by 0xAgun
+        """
+
+        print(self.holders)
+
     
     def extract(self):
         if not os.path.exists(self.input_file):
@@ -77,7 +92,7 @@ class Extractor:
         return self.output_file
 
 def main():
-    parser = argparse.ArgumentParser(description="Extract a .gz file")
+    parser = argparse.ArgumentParser(description="Extract  the .gz shodan file and parse ip port hostnames")
     parser.add_argument("input_file", type=str, help="Path to the .gz file to be extracted")
     parser.add_argument("-o", "--output_dir", type=str, default=None, help="Directory to extract the file to")
     parser.add_argument("-e", "--eip", type=str, default='extracted.txt', help="File to save extracted IP and port")
@@ -86,6 +101,7 @@ def main():
     args = parser.parse_args()
 
     extractor = Extractor(args.input_file, args.output_dir, args.eip, args.host)
+    extractor.Banner()
     extractor.extract()
     extractor.read_content()
     extractor.extract_ip_and_port()
