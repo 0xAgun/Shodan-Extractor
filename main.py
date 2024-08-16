@@ -5,6 +5,7 @@ import argparse
 import json
 from rich.console import Console
 from rich.table import Table
+from rich.progress import Progress
 
 class Extractor:
     def __init__(self, input_file, output_dir=None, eip='extracted.txt', host=None):
@@ -19,41 +20,42 @@ class Extractor:
         self.table.add_column("Hostname", style="yellow")
         self.console = Console()
 
-
     def Banner(self):
         self.holders = """
            _____ __              __               ______     __                  __            
           / ___// /_  ____  ____/ /___ _____     / ____/  __/ /__________ ______/ /_____  _____
           \__ \/ __ \/ __ \/ __  / __ `/ __ \   / __/ | |/_/ __/ ___/ __ `/ ___/ __/ __ \/ ___/
-         ___/ / / / / /_/ / /_/ / /_/ / / / /  / /____>  </ /_/ /  / /_/ / /__/ /_/ /_/ / /    
+         ___/ / / / /_/ / /_/ / /_/ / / / / /  / /____>  </ /_/ /  / /_/ / /__/ /_/ /_/ / /    
         /____/_/ /_/\____/\__,_/\__,_/_/ /_/  /_____/_/|_|\__/_/   \__,_/\___/\__/\____/_/      v1.0.5
 
                                                                     by 0xAgun
         """
-
         print(self.holders)
 
-    
     def extract(self):
         if not os.path.exists(self.input_file):
             print(f"Error: {self.input_file} does not exist.")
             return
-        
+
         try:
-            with gzip.open(self.input_file, 'rb') as f_in:
-                with open(self.output_file, 'wb') as f_out:
-                    shutil.copyfileobj(f_in, f_out)
+            with Progress() as progress:
+                task = progress.add_task("[cyan]Extracting file...", total=os.path.getsize(self.input_file))
+                with gzip.open(self.input_file, 'rb') as f_in:
+                    with open(self.output_file, 'wb') as f_out:
+                        while chunk := f_in.read(1024 * 1024):  # Read in chunks of 1MB
+                            f_out.write(chunk)
+                            progress.update(task, advance=len(chunk))
             print(f"File extracted successfully to {self.output_file}")
         except Exception as e:
             print(f"Failed to extract {self.input_file}. Error: {e}")
-    
+
     def read_content(self):
         try:
             with open(self.output_file, 'r') as file:
                 self.content = file.read()
         except Exception as e:
             print(f"Failed to read content from {self.output_file}. Error: {e}")
-    
+
     def extract_ip_and_port(self):
         results = []
         hosts = []
@@ -61,19 +63,26 @@ class Extractor:
             with open(self.output_file, 'r') as file:
                 content = file.read()
                 json_objects = content.strip().split('\n')
-                for obj in json_objects:
-                    try:
-                        contest = json.loads(obj)
-                        ip_str = contest.get('ip_str')
-                        port = contest.get('port')
-                        hostnames = contest.get('hostnames', [])
-                        if ip_str and port:
-                            results.append(f"{ip_str}:{port}")
-                            hosts.append(hostnames)
-                            self.table.add_row(str(ip_str), str(port), ', '.join(hostnames))
-                    except json.JSONDecodeError as e:
-                        print(f"JSON decode error: {e}")
-            
+                total_lines = len(json_objects)
+
+                with Progress() as progress:
+                    task = progress.add_task("[cyan]Extracting IP and port...", total=total_lines)
+                    
+                    for obj in json_objects:
+                        try:
+                            contest = json.loads(obj)
+                            ip_str = contest.get('ip_str')
+                            port = contest.get('port')
+                            hostnames = contest.get('hostnames', [])
+                            if ip_str and port:
+                                results.append(f"{ip_str}:{port}")
+                                hosts.append(hostnames)
+                                self.table.add_row(str(ip_str), str(port), ', '.join(hostnames))
+                        except json.JSONDecodeError as e:
+                            print(f"JSON decode error: {e}")
+                        
+                        progress.update(task, advance=1)
+
             with open(self.eip, 'w') as file:
                 for result in results:
                     file.write(result + '\n')
@@ -92,7 +101,7 @@ class Extractor:
         return self.output_file
 
 def main():
-    parser = argparse.ArgumentParser(description="Extract  the .gz shodan file and parse ip port hostnames")
+    parser = argparse.ArgumentParser(description="Extract  the .gz shodan file and parse IP, port, and hostnames")
     parser.add_argument("input_file", type=str, help="Path to the .gz file to be extracted")
     parser.add_argument("-o", "--output_dir", type=str, default=None, help="Directory to extract the file to")
     parser.add_argument("-e", "--eip", type=str, default='extracted.txt', help="File to save extracted IP and port")
